@@ -3,7 +3,7 @@ import cors from "cors";
 import connectDB from "./libs/db.js";
 // import chatRouter from "./routes/chat_router.js";
 // import messageRouter from "./routes/message_router.js";
-import PostRoute from "./routes/post_routes.js";
+import PhotoRoute from "./routes/photo_routes.js"; // Sửa: Đổi từ post_routes.js
 import dotenv from "dotenv";
 dotenv.config(); // Phải gọi trước khi connectDB
 
@@ -18,7 +18,8 @@ app.use(express.json());
 // routes
 // app.use("/api/chats", chatRouter);
 // app.use("/api/messages", messageRouter);
-app.use("/api/posts", PostRoute);
+app.use("/api/photos", PhotoRoute); // Sửa path thành /photos cho nhất quán
+
 // connect to DB and start server
 connectDB()
   .then(() => {
