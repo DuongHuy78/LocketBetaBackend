@@ -1,5 +1,5 @@
 import dotenv from "dotenv"; // Di chuyển lên đầu để load env sớm
-dotenv.config({path: 'enviroment.env'}); // Load env vars (PORT, DB_URL, etc.)
+dotenv.config(); // Load env vars (PORT, DB_URL, etc.)
 
 import express from "express";
 import connectDB from "./libs/db.js";
@@ -11,7 +11,7 @@ import cors from "cors";
 import http from "http";
 import { WebSocketServer } from "ws";
 import { handleWsConnection } from "./controller/message_controller.js"; // Sửa path: controllers/ (plural, chuẩn convention)
- 
+
 const PORT = process.env.PORT || 5000;
 
 const app = express();

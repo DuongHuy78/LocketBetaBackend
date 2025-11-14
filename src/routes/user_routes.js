@@ -4,7 +4,7 @@ import {
   updateUserProfile,
   getUserById,
 } from "../controller/user_controller.js";
-import auth from "../middleware/auth.js"; // <-- Import "người gác cổng"
+import { auth } from "../middleware/auth.js"; // <-- Import "người gác cổng"
 
 const router = express.Router();
 
