@@ -6,11 +6,15 @@ import connectDB from "./libs/db.js";
 import PhotoRoute from "./routes/photo_routes.js"; // Photo routes (từ trước)
 import chatRouter from "./routes/chat_router.js"; // Thêm import cho chat
 import messageRouter from "./routes/message_router.js"; // Thêm import cho messages
-import AuthRoute from "./routes/auth_routes.js"; // Thêm import cho auth (giả sử file auth_routes.js)
 import cors from "cors";
 import http from "http";
 import { WebSocketServer } from "ws";
 import { handleWsConnection } from "./controller/message_controller.js"; // Sửa path: controllers/ (plural, chuẩn convention)
+import PostRoute from "./routes/post_routes.js";
+import AuthRoute from "./routes/auth_routes.js";
+import FriendRoute from "./routes/friend_routes.js";
+import dotenv from "dotenv";
+dotenv.config(); // Phải gọi trước khi connectDB
 
 const PORT = process.env.PORT || 5000;
 
@@ -30,6 +34,8 @@ app.use("/api/photos", PhotoRoute);
 app.use("/api/chats", chatRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/auth", AuthRoute);
+app.use("/api/friends", FriendRoute);
+// connect to DB and start server
 
 // Health check endpoint (optional)
 app.get("/", (req, res) => {
