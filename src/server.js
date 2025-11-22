@@ -6,13 +6,15 @@ import connectDB from "./libs/db.js";
 import PhotoRoute from "./routes/photo_routes.js"; // Photo routes (từ trước)
 import chatRouter from "./routes/chat_router.js"; // Thêm import cho chat
 import messageRouter from "./routes/message_router.js"; // Thêm import cho messages
+import userRouter from "./routes/user_routes.js";
 import cors from "cors";
 import http from "http";
 import { WebSocketServer } from "ws";
 import { handleWsConnection } from "./controller/message_controller.js"; // Sửa path: controllers/ (plural, chuẩn convention)
 import AuthRoute from "./routes/auth_routes.js";
 import FriendRoute from "./routes/friend_routes.js";
-
+import RecommendationRouter from "./routes/recommendation_routes.js";
+import FriendRequestRouter from "./routes/friendRequest_routes.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -28,11 +30,15 @@ app.use(
 app.use(express.json({ limit: "10mb" })); // Giới hạn body size cho image upload nếu cần
 
 // Routes
+app.use("/api/users", userRouter);
 app.use("/api/photos", PhotoRoute);
 app.use("/api/chats", chatRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/auth", AuthRoute);
 app.use("/api/friends", FriendRoute);
+app.use("/api/friend-requests", FriendRequestRouter);
+app.use("/api/users/recommendation", RecommendationRouter);
+
 // connect to DB and start server
 
 // Health check endpoint (optional)
