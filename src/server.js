@@ -6,6 +6,8 @@ import connectDB from "./libs/db.js";
 import PostRoute from "./routes/post_routes.js";
 import AuthRoute from "./routes/auth_routes.js";
 import FriendRoute from "./routes/friend_routes.js";
+import RecommendationRouter from "./routes/recommendation_routes.js";
+import FriendRequestRouter from "./routes/friendRequest_routes.js";
 import dotenv from "dotenv";
 dotenv.config(); // Phải gọi trước khi connectDB
 
@@ -23,6 +25,9 @@ app.use(express.json());
 app.use("/api/posts", PostRoute);
 app.use("/api/auth", AuthRoute);
 app.use("/api/friends", FriendRoute);
+app.use("/api/friend-requests", FriendRequestRouter);
+app.use("/api/users/recommendation", RecommendationRouter);
+
 // connect to DB and start server
 connectDB()
   .then(() => {
