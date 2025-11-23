@@ -49,7 +49,9 @@ app.get("/", (req, res) => {
 // Create HTTP server & WebSocket server
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
-var webSockets = {}; // Sửa: const thay var, global map { userId: ws }
+const webSockets = {}; // Sửa: const thay var, global map { userId: ws }
+//gắn vào để có thể gọi ở trong message controller để gửi payload
+app.locals.webSockets = webSockets;
 
 // Handle WS upgrade (với basic auth example)
 server.on("upgrade", (request, socket, head) => {
@@ -73,19 +75,19 @@ wss.on("connection", (ws, req) => {
   handleWsConnection(ws, req, wss, webSockets); // Pass webSockets để manage connections (e.g., userId -> ws)
 
   // Cleanup on disconnect
-  // ws.on("close", () => {
-  //   console.log("❌ WS connection closed");
-  //   // Remove from webSockets map (implement in handleWsConnection nếu cần)
-  //   Object.keys(webSockets).forEach((userId) => {
-  //     if (webSockets[userId] === ws) {
-  //       delete webSockets[userId];
-  //     }
-  //   });
-  // });
+  ws.on("close", () => {
+    console.log("❌ WS connection closed");
+    // Remove from webSockets map (implement in handleWsConnection nếu cần)
+    Object.keys(webSockets).forEach((userId) => {
+      if (webSockets[userId] === ws) {
+        delete webSockets[userId];
+      }
+    });
+  });
 
-  // ws.on("error", (err) => {
-  //   console.error("❌ WS error:", err);
-  // });
+  ws.on("error", (err) => {
+    console.error("❌ WS error:", err);
+  });
 });
 
 // Connect DB and start server
