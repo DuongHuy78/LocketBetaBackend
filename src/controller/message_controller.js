@@ -14,7 +14,7 @@ export const getAllMessages = async (req, res) => {
         // console.log("Messages: " + messages);
         return res.json(messages);
     } catch (e) {
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: e.Message });
     }
 }
 
@@ -72,7 +72,7 @@ export const deleteMessage = async (req, res) => {
             }
         }
 
-        return res.status(200).json({ status: 'ok', messageId });
+        return res.status(200);
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
