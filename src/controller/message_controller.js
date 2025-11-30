@@ -241,12 +241,6 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
                 return;
             }
 
-            // if (evt === 'heartbeat') {
-            //     req.app.locals.presence = req.app.locals.presence || {};
-            //     req.app.locals.presence[userID] = { status: 'online', ts: new Date().toISOString() };
-            //     return;
-            // }
-
             // TYPING
             if (evt === 'typing') {
                 const chatId = data.chatId;
