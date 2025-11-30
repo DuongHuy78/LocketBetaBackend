@@ -20,6 +20,7 @@ import FriendRoute from "./routes/friend_routes.js";
 import RecommendationRouter from "./routes/recommendation_routes.js";
 import FriendRequestRouter from "./routes/friendRequest_routes.js";
 
+
 // WebSocket controller
 import { handleWsConnection } from "./controller/message_controller.js";
 
@@ -37,6 +38,7 @@ app.use(express.json({ limit: "10mb" }));
 // Serve folder uploads để client truy cập ảnh
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+
 // Routes
 app.use("/api/users", userRouter);
 app.use("/api/photos", PhotoRoute);
@@ -44,8 +46,8 @@ app.use("/api/chats", chatRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/auth", AuthRoute);
 app.use("/api/friends", FriendRoute);
-app.use("/api/friend-requests", FriendRequestRouter);
-app.use("/api/users/recommendation", RecommendationRouter);
+// app.use("/api/friend-requests", FriendRequestRouter);
+// app.use("/api/users/recommendation", RecommendationRouter);
 
 // Health check
 app.get("/", (req, res) => {
@@ -55,7 +57,11 @@ app.get("/", (req, res) => {
 // Create HTTP server & WebSocket server
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
-const webSockets = {}; // map { userId: ws }
+
+const webSockets = {}; // Sửa: const thay var, global map { userId: ws }
+//gắn vào để có thể gọi ở trong message controller để gửi payload
+app.locals.webSockets = webSockets;
+
 
 // Handle WebSocket upgrade
 server.on("upgrade", (request, socket, head) => {
@@ -71,8 +77,11 @@ wss.on("connection", (ws, req) => {
   // Cleanup on disconnect
   ws.on("close", () => {
     console.log("❌ WS connection closed");
+    // Remove from webSockets map (implement in handleWsConnection nếu cần)
     Object.keys(webSockets).forEach((userId) => {
-      if (webSockets[userId] === ws) delete webSockets[userId];
+      if (webSockets[userId] === ws) {
+        delete webSockets[userId];
+      }
     });
   });
 
