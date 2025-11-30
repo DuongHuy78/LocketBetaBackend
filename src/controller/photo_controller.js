@@ -15,23 +15,32 @@ export const getAllPhotos = async (req, res) => {
   }
 };
 
-// Tạo ảnh mới
+// Tạo ảnh mới (upload file)
 export const createPhoto = async (req, res) => {
   try {
-    const { userId, imageUrl, caption } = req.body;
+    const { userId, caption } = req.body;
 
-    if (!userId || !imageUrl) {
-      return res.status(400).json({ message: "Thiếu userId hoặc imageUrl" });
+    if (!userId) {
+      return res.status(400).json({ message: "Thiếu userId" });
     }
+
+    // Nếu không có file gửi lên
+    if (!req.file) {
+      return res.status(400).json({ message: "Không có file ảnh" });
+    }
+
+    // Tạo URL public
+    const imageUrl = `${process.env.SERVER_URL}/uploads/${req.file.filename}`;
 
     const newPhoto = await Photo.create({
       userId,
+      caption: caption || "",
       imageUrl,
-      caption,
+      timestamp: new Date(),
     });
 
     res.status(201).json({
-      message: "Tạo ảnh thành công",
+      message: "Upload ảnh thành công",
       photo: newPhoto,
     });
   } catch (error) {

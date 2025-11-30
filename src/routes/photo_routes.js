@@ -1,4 +1,5 @@
 import express from "express";
+import { upload } from "../middleware/upload.js";
 import {
   createPhoto,
   getAllPhotos,
@@ -24,5 +25,8 @@ router.get("/:id", getDetailPhoto);
 // delete photo
 router.delete("/:id", deletePhoto);
 
+//
+// Upload ảnh thực
+router.post("/upload", upload.single("image"), createPhoto);
 
 export default router;

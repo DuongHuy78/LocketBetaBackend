@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon --env-file=enviroment.env src/server.js",
+    "dev": "nodemon --env-file=.env src/server.js",
     "seed": "node src/scripts/seed.js"
   },
   "keywords": [],
@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.20.0",
     "mongoose": "^8.19.3",
+    "multer": "^2.0.2",
     "ws": "^8.18.3"
   },
   "devDependencies": {
