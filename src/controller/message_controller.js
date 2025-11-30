@@ -199,20 +199,37 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
         const evt = data.event || 'message';
 
         try {
-            // PRESENCE / HEARTBEAT
+            //presence
             if (evt === 'presence') {
-                const status = data.status || 'online';
-                req.app.locals.presence = req.app.locals.presence || {};
-                req.app.locals.presence[userID] = { status, ts: data.ts || new Date().toISOString() };
+                const status = data.status;   // 'online' | 'heartbeat' | 'away' | 'offline'
+                const curruntUserId = data.userId;
+                const timeSend = data.timeSend;
+                
+                // parse timeSend (fallback to now if invalid/missing)
+                let sentTs = Date.now();
+                if (timeSend) {
+                    const parsed = Date.parse(timeSend);
+                    if (!isNaN(parsed)) sentTs = parsed;
+                }
 
-                // broadcast presence_update to user's chat members (so their friends see online)
+                // consider offline if sent timestamp older than 10s
+                const nowTs = Date.now();
+                const elapsedMs = nowTs - sentTs;
+                const computedStatus = elapsedMs > 10000 ? 'offline' : (status || 'online');
+
+                console.log("DEBUG: SERVER MessagerController states:" + status);
+
                 try {
-                    const chats = await Chat.find({ members: userID }).select('members').lean();
+                    const chats = await Chat.find({ members: curruntUserId }).select('members').lean();
                     const memberIds = new Set();
                     chats.forEach(c => (c.members || []).forEach(m => memberIds.add(String(m))));
-                    const payload = JSON.stringify({ event: 'presence_update', userId: userID, status, ts: req.app.locals.presence[userID].ts });
-                    for (const mid of memberIds) {
-                        const clients = webSockets[mid];
+                    const payload = JSON.stringify({ 
+                        event: 'presence_update', 
+                        userId: curruntUserId, 
+                        status: status, 
+                    });
+                    for (const member of memberIds) {
+                        const clients = webSockets[member];
                         if (!clients) continue;
                         for (const client of clients) {
                             if (client && client.readyState === 1) {
@@ -224,13 +241,13 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
                 return;
             }
 
-            if (evt === 'heartbeat') {
-                req.app.locals.presence = req.app.locals.presence || {};
-                req.app.locals.presence[userID] = { status: 'online', ts: new Date().toISOString() };
-                return;
-            }
+            // if (evt === 'heartbeat') {
+            //     req.app.locals.presence = req.app.locals.presence || {};
+            //     req.app.locals.presence[userID] = { status: 'online', ts: new Date().toISOString() };
+            //     return;
+            // }
 
-            // TYPING indicator
+            // TYPING
             if (evt === 'typing') {
                 const chatId = data.chatId;
                 const typing = !!data.typing;
@@ -240,7 +257,7 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
                         const chat = await Chat.findById(chatId).select('members').lean();
                         if (chat && Array.isArray(chat.members)) {
                             for (const memberId of chat.members) {
-                                if (String(memberId) === String(userID)) continue; // skip sender
+                                if (String(memberId) === String(userID)) continue; // Nếu người dùng đã có trong websockets list thì ko thêm
                                 const clients = webSockets[String(memberId)];
                                 if (!clients) continue;
                                 for (const client of clients) {
@@ -255,7 +272,7 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
                 return;
             }
 
-            // MESSAGE (default behavior)
+            // MESSAGE
             if (evt === 'message') {
                 const { chatId, content, type = 'text' } = data;
                 if (!chatId || !content) {
