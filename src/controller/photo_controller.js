@@ -15,7 +15,7 @@ export const getAllPhotos = async (req, res) => {
   }
 };
 
-// Tạo ảnh mới (upload file)
+// Tạo ảnh mới (upload file lên Cloudinary)
 export const createPhoto = async (req, res) => {
   try {
     const { userId, caption } = req.body;
@@ -29,8 +29,8 @@ export const createPhoto = async (req, res) => {
       return res.status(400).json({ message: "Không có file ảnh" });
     }
 
-    // Tạo URL public
-    const imageUrl = `${process.env.SERVER_URL}/uploads/${req.file.filename}`;
+    // req.file.path là URL của ảnh trên Cloudinary
+    const imageUrl = req.file.path;
 
     const newPhoto = await Photo.create({
       userId,
@@ -40,7 +40,7 @@ export const createPhoto = async (req, res) => {
     });
 
     res.status(201).json({
-      message: "Upload ảnh thành công",
+      message: "Upload ảnh lên Cloudinary thành công",
       photo: newPhoto,
     });
   } catch (error) {

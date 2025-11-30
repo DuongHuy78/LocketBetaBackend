@@ -1,6 +1,6 @@
 import "dotenv/config";
 import dotenv from "dotenv";
-dotenv.config(); // Load env vars (PORT, DB_URL, etc.)
+dotenv.config();
 
 import express from "express";
 import connectDB from "./libs/db.js";
@@ -20,7 +20,6 @@ import FriendRoute from "./routes/friend_routes.js";
 import RecommendationRouter from "./routes/recommendation_routes.js";
 import FriendRequestRouter from "./routes/friendRequest_routes.js";
 
-
 // WebSocket controller
 import { handleWsConnection } from "./controller/message_controller.js";
 
@@ -31,15 +30,14 @@ const PORT = process.env.PORT || 8000;
 
 const app = express();
 
-// Middleware
+// ===== Middleware =====
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json({ limit: "10mb" }));
 
-// Serve folder uploads để client truy cập ảnh
+// Serve folder uploads nếu cần (nếu vẫn dùng upload local)
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-
-// Routes
+// ===== Routes =====
 app.use("/api/users", userRouter);
 app.use("/api/photos", PhotoRoute);
 app.use("/api/chats", chatRouter);
@@ -54,14 +52,13 @@ app.get("/", (req, res) => {
   res.json({ message: "Server is running!" });
 });
 
-// Create HTTP server & WebSocket server
+// ===== HTTP & WebSocket server =====
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 
-const webSockets = {}; // Sửa: const thay var, global map { userId: ws }
-//gắn vào để có thể gọi ở trong message controller để gửi payload
+// Global WebSocket map { userId: ws }
+const webSockets = {};
 app.locals.webSockets = webSockets;
-
 
 // Handle WebSocket upgrade
 server.on("upgrade", (request, socket, head) => {
@@ -70,18 +67,16 @@ server.on("upgrade", (request, socket, head) => {
   });
 });
 
+// WebSocket connection
 wss.on("connection", (ws, req) => {
   console.log("✅ New WS connection established");
+
   handleWsConnection(ws, req, wss, webSockets);
 
-  // Cleanup on disconnect
   ws.on("close", () => {
     console.log("❌ WS connection closed");
-    // Remove from webSockets map (implement in handleWsConnection nếu cần)
     Object.keys(webSockets).forEach((userId) => {
-      if (webSockets[userId] === ws) {
-        delete webSockets[userId];
-      }
+      if (webSockets[userId] === ws) delete webSockets[userId];
     });
   });
 
@@ -90,7 +85,7 @@ wss.on("connection", (ws, req) => {
   });
 });
 
-// Connect DB and start server
+// ===== Connect DB & start server =====
 connectDB()
   .then(() => {
     server.listen(PORT, () => {
