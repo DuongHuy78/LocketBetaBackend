@@ -108,7 +108,7 @@ export const getFriends = async (req, res) => {
 
         return {
           id: f.friendId,
-          name: user?.name || "Unknown",
+          name: user?.username || "Unknown",
           profileImage: user?.profileImage || null,
           isActive: user?.isActive || false,
           lastSeen: user?.lastSeen || new Date(),
@@ -139,7 +139,7 @@ export const getFriendRequests = async (req, res) => {
         return {
           id: reqItem._id.toString(),
           senderId: reqItem.senderId,
-          name: sender?.name || "Unknown",
+          name: sender?.username || "Unknown",
           profileImage: sender?.profileImage || null,
         };
       })
