@@ -93,8 +93,9 @@ export const getPhotosByUserId = async (req, res) => {
       return res.status(400).json({ message: "Thiếu userId" });
     }
 
-    // Tìm tất cả ảnh có userId tương ứng, sắp xếp mới nhất trước
-    const photos = await Photo.find({ userId }).sort({ timestamp: -1 });
+    const photos = await Photo.find({userId})
+      .sort({ timestamp: -1 })
+      .populate("userId", "username avatarUrl"); // ← populate user info
 
     res.status(200).json({
       photos,
