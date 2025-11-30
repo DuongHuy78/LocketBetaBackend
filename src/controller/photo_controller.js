@@ -1,5 +1,6 @@
 import Photo from "../models/photo.js";
-
+import Message from "../models/Message.js";
+import Chat from "../models/Chat.js";
 // Lấy toàn bộ danh sách ảnh
 export const getAllPhotos = async (req, res) => {
   try {
@@ -15,23 +16,32 @@ export const getAllPhotos = async (req, res) => {
   }
 };
 
-// Tạo ảnh mới
+// Tạo ảnh mới (upload file lên Cloudinary)
 export const createPhoto = async (req, res) => {
   try {
-    const { userId, imageUrl, caption } = req.body;
+    const { userId, caption } = req.body;
 
-    if (!userId || !imageUrl) {
-      return res.status(400).json({ message: "Thiếu userId hoặc imageUrl" });
+    if (!userId) {
+      return res.status(400).json({ message: "Thiếu userId" });
     }
+
+    // Nếu không có file gửi lên
+    if (!req.file) {
+      return res.status(400).json({ message: "Không có file ảnh" });
+    }
+
+    // req.file.path là URL của ảnh trên Cloudinary
+    const imageUrl = req.file.path;
 
     const newPhoto = await Photo.create({
       userId,
+      caption: caption || "",
       imageUrl,
-      caption,
+      timestamp: new Date(),
     });
 
     res.status(201).json({
-      message: "Tạo ảnh thành công",
+      message: "Upload ảnh lên Cloudinary thành công",
       photo: newPhoto,
     });
   } catch (error) {
@@ -93,5 +103,65 @@ export const getPhotosByUserId = async (req, res) => {
   } catch (error) {
     console.error("❌ Lỗi khi lấy ảnh theo userId:", error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const sendPhoto = async (req, res) => {
+  const { senderId, receiverId, imageUrl, caption } = req.body;
+
+  if (!senderId || !receiverId || !imageUrl) {
+    return res
+      .status(400)
+      .json({ error: "senderId, receiverId và imageUrl là bắt buộc" });
+  }
+
+  try {
+    // 1. Kiểm tra hoặc tạo chat giữa 2 người
+    let chat = await Chat.findOne({
+      members: { $all: [senderId, receiverId] },
+    });
+
+    if (!chat) {
+      chat = await Chat.create({
+        members: [senderId, receiverId],
+      });
+    }
+
+    // 2. Tạo tin nhắn ảnh
+    const imageMessage = await Message.create({
+      chatId: chat._id,
+      sender: senderId,
+      type: "image",
+      content: imageUrl,
+      createdAt: new Date(),
+    });
+
+    // 3. Tạo tin nhắn text nếu có caption
+    let textMessage = null;
+    if (caption && caption.trim() !== "") {
+      textMessage = await Message.create({
+        chatId: chat._id,
+        sender: senderId,
+        type: "text",
+        content: caption,
+        createdAt: new Date(),
+      });
+    }
+
+    // 4. Cập nhật lastMessage của chat (lấy message mới nhất)
+    const lastMessage = textMessage || imageMessage;
+    chat.lastMessage = lastMessage._id;
+    chat.updatedAt = new Date();
+    await chat.save();
+
+    // 5. Trả về payload
+    return res.status(200).json({
+      message: "Gửi ảnh thành công",
+      chatId: chat._id,
+      messages: [imageMessage, textMessage].filter(Boolean),
+    });
+  } catch (err) {
+    console.error("sendPhoto error:", err);
+    return res.status(500).json({ error: err.message });
   }
 };
