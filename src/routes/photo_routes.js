@@ -6,6 +6,7 @@ import {
   getDetailPhoto,
   deletePhoto,
   getPhotosByUserId,
+  sendPhoto,
 } from "../controller/photo_controller.js"; // Sửa path nếu cần
 
 const router = express.Router();
@@ -25,4 +26,6 @@ router.get("/:id", getDetailPhoto);
 // Delete photo
 router.delete("/:id", deletePhoto);
 
+// send photo to friend
+router.post("/sendPhoto", sendPhoto);
 export default router;
