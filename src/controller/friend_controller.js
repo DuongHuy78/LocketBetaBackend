@@ -1,4 +1,3 @@
-import Chat from "../models/Chat.js";
 import Friend from "../models/Friend.js";
 import User from "../models/User.js";
 
@@ -42,7 +41,7 @@ export const getFriends = async (req, res) => {
         return {
           id: f.friendId,
           name: user?.username || "Unknown",
-          profileImage: user?.profileImage || null,
+          profileImage: user?.avatarUrl || null,
           isActive: user?.isActive || false,
           lastSeen: user?.lastSeen || new Date(),
         };
@@ -55,126 +54,19 @@ export const getFriends = async (req, res) => {
   }
 };
 
-// lấy danh sách yêu cầu kết bạn (đã FIX)
-export const getFriendRequests = async (req, res) => {
+export const deleteFriend = async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const { friendId } = req.params;
+    const { userId } = req.body; 
 
-    const requests = await FriendRequest.find({
-      receiverId: userId,
-      status: "pending",
-    });
+    const deleted1 = await Friend.findOneAndDelete({ userId, friendId });
+    const deleted2 = await Friend.findOneAndDelete({ userId: friendId, friendId: userId });
 
-    const result = await Promise.all(
-      requests.map(async (reqItem) => {
-        const sender = await User.findById(reqItem.senderId);
-
-        return {
-          id: reqItem._id.toString(),
-          senderId: reqItem.senderId,
-          name: sender?.username || "Unknown",
-          profileImage: sender?.profileImage || null,
-        };
-      })
-    );
-
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// gửi lời mời kết bạn
-export const sendFriendRequest = async (req, res) => {
-  try {
-    const { senderId, receiverId } = req.body;
-
-    const exists = await FriendRequest.findOne({
-      senderId,
-      receiverId,
-      status: "pending",
-    });
-
-    if (exists) {
-      return res.status(400).json({ error: "Already sent" });
+    if (!deleted1 && !deleted2) {
+      return res.status(404).json({ error: "Friend not found" });
     }
 
-    const newRequest = new FriendRequest({ senderId, receiverId });
-    await newRequest.save();
-
-    res.json({ message: "Request sent" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// accept friend request
-export const acceptFriendRequest = async (req, res) => {
-  try {
-    const requestId = req.params.requestId;
-
-    const request = await FriendRequest.findById(requestId);
-    if (!request) return res.status(404).json({ error: "Not found" });
-
-    request.status = "accepted";
-    await request.save();
-
-    // add friend both sides
-    await Friend.create({
-      userId: request.senderId,
-      friendId: request.receiverId,
-    });
-    await Friend.create({
-      userId: request.receiverId,
-      friendId: request.senderId,
-    });
-
-    //sau khi add friend thì tạo thêm trang chat chung
-    await Chat.create({
-      members: [request.senderId, request.receiverId],
-    });
-
-    res.status(200).json({ message: "Friend request accepted and Chat is created" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// reject request
-export const rejectFriendRequest = async (req, res) => {
-  try {
-    const requestId = req.params.requestId;
-
-    await FriendRequest.findByIdAndDelete(requestId);
-
-    res.json({ message: "Friend request rejected" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// lấy danh sách gợi ý kết bạn
-export const getRecommendations = async (req, res) => {
-  try {
-    const userId = req.params.userId;
-
-    // lấy tất cả người dùng trừ bản thân và những người đã là bạn
-    const friends = await Friend.find({ userId });
-    const friendIds = friends.map(f => f.friendId.toString());
-
-    const users = await User.find({
-      _id: { $nin: [userId, ...friendIds] }
-    }).limit(10); // giới hạn 10 người gợi ý
-
-    const result = users.map(u => ({
-      id: u._id,
-      name: u.username || "Unknown",
-      profileImage: u.avatarUrl || null,
-      isActive: u.isActive || false,
-      lastSeen: u.lastSeen || new Date(),
-    }));
-
-    res.json(result);
+    res.json({ message: "Friend removed successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
