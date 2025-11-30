@@ -1,66 +1,97 @@
+// friendRequest_controller.js
 import FriendRequest from "../models/FriendRequest.js";
 import Friend from "../models/Friend.js";
+import User from "../models/User.js";
 
+// lấy danh sách yêu cầu kết bạn
 export const getFriendRequests = async (req, res) => {
   try {
-    const requests = await FriendRequest.find({ toUser: req.params.userId, status: "pending" })
-      .populate("fromUser", "username avatarUrl")
-      .exec();
+    const userId = req.params.userId;
 
-    res.status(200).json(requests.map(r => ({
-      id: r._id,
-      fromUserId: r.fromUser._id,
-      username: r.fromUser.username,
-      avatarUrl: r.fromUser.avatarUrl,
-    })));
+    const requests = await FriendRequest.find({
+      receiverId: userId,
+      status: "pending",
+    });
+
+    const result = await Promise.all(
+      requests.map(async (reqItem) => {
+        const sender = await User.findById(reqItem.senderId);
+
+        return {
+          id: reqItem._id.toString(),
+          senderId: reqItem.senderId,
+          name: sender?.username || "Unknown",
+          profileImage: sender?.profileImage || null,
+        };
+      })
+    );
+
+    res.json(result);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ error: err.message });
   }
 };
 
+// gửi lời mời kết bạn
+export const sendFriendRequest = async (req, res) => {
+  try {
+    const { senderId, receiverId } = req.body;
+
+    const exists = await FriendRequest.findOne({
+      senderId,
+      receiverId,
+      status: "pending",
+    });
+
+    if (exists) {
+      return res.status(400).json({ error: "Already sent" });
+    }
+
+    const newRequest = new FriendRequest({ senderId, receiverId });
+    await newRequest.save();
+
+    res.json({ message: "Request sent" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// accept friend request
 export const acceptFriendRequest = async (req, res) => {
   try {
-    const request = await FriendRequest.findById(req.params.id);
-    if (!request) return res.status(404).json({ message: "Request not found" });
+    const requestId = req.params.requestId;
+
+    const request = await FriendRequest.findById(requestId);
+    if (!request) return res.status(404).json({ error: "Not found" });
 
     request.status = "accepted";
     await request.save();
 
-    // Tạo record Friend cho cả 2 bên
-    await Friend.create({ userId: request.fromUser, friendId: request.toUser });
-    await Friend.create({ userId: request.toUser, friendId: request.fromUser });
+    // kết bạn 2 chiều
+    await Friend.create({
+      userId: request.senderId,
+      friendId: request.receiverId,
+    });
+    await Friend.create({
+      userId: request.receiverId,
+      friendId: request.senderId,
+    });
 
-    res.status(200).json({ message: "Friend request accepted" });
+    res.json({ message: "Friend request accepted" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ error: err.message });
   }
 };
 
+// reject request
 export const rejectFriendRequest = async (req, res) => {
   try {
-    const request = await FriendRequest.findById(req.params.id);
-    if (!request) return res.status(404).json({ message: "Request not found" });
+    const requestId = req.params.requestId;
 
-    request.status = "rejected";
-    await request.save();
+    await FriendRequest.findByIdAndDelete(requestId);
 
-    res.status(200).json({ message: "Friend request rejected" });
+    res.json({ message: "Friend request rejected" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-export const sendFriendRequest = async (req, res) => {
-  try {
-    const { fromUser, toUser } = req.body;
-    const exists = await FriendRequest.findOne({ fromUser, toUser, status: "pending" });
-    if (exists) return res.status(400).json({ message: "Request already sent" });
-
-    const newRequest = new FriendRequest({ fromUser, toUser });
-    await newRequest.save();
-
-    res.status(201).json({ message: "Friend request sent", id: newRequest._id });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ error: err.message });
   }
 };
