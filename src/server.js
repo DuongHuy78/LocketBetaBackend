@@ -27,7 +27,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: "10mb" })); // Giới hạn body size cho image upload nếu cần
+app.use(express.json({ limit: "10mb" }));
 
 // Routes
 app.use("/api/users", userRouter);
