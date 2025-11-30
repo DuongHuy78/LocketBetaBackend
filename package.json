@@ -23,6 +23,7 @@
     "mongoose": "^8.20.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
+
     "ws": "^8.18.3"
   },
   "devDependencies": {

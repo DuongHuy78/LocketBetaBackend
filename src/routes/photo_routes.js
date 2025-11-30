@@ -1,4 +1,5 @@
 import express from "express";
+import uploadCloud from "../config/cloudinary.config.js"; // Multer Cloudinary
 import {
   createPhoto,
   getAllPhotos,
@@ -9,20 +10,19 @@ import {
 
 const router = express.Router();
 
-// create photo
-router.post("/", createPhoto);
+// Create photo (upload trực tiếp lên Cloudinary)
+router.post("/upload", uploadCloud.single("image"), createPhoto);
 
-//get photos by userId
+// Get photos by userId
 router.get("/user/:userId", getPhotosByUserId);
 
-// get all photos (with pagination)
+// Get all photos (với pagination nếu cần)
 router.get("/", getAllPhotos);
 
-// get detail photo
+// Get detail photo
 router.get("/:id", getDetailPhoto);
 
-// delete photo
+// Delete photo
 router.delete("/:id", deletePhoto);
-
 
 export default router;
