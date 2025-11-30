@@ -60,6 +60,7 @@
 //   }
 // };
 
+import Chat from "../models/Chat.js";
 import Friend from "../models/Friend.js";
 import FriendRequest from "../models/FriendRequest.js";
 import User from "../models/User.js";
@@ -196,7 +197,12 @@ export const acceptFriendRequest = async (req, res) => {
       friendId: request.senderId,
     });
 
-    res.json({ message: "Friend request accepted" });
+    //sau khi add friend thì tạo thêm trang chat chung
+    await Chat.create({
+      members: [request.senderId, request.receiverId],
+    });
+
+    res.status(200).json({ message: "Friend request accepted and Chat is created" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
