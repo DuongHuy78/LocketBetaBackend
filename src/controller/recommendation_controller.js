@@ -1,5 +1,5 @@
-import User from "../models/User.js";
 import Friend from "../models/Friend.js";
+import User from "../models/User.js";
 
 export const getRecommendations = async (req, res) => {
   try {
@@ -7,13 +7,21 @@ export const getRecommendations = async (req, res) => {
 
     const friends = await Friend.find({ userId });
     const friendIds = friends.map(f => f.friendId.toString());
-    
-    const recommendations = await User.find({
-      _id: { $ne: userId, $nin: friendIds }
-    }).select("username avatarUrl");
 
-    res.status(200).json(recommendations);
+    const users = await User.find({
+      _id: { $nin: [userId, ...friendIds] }
+    }).limit(10);
+
+    const result = users.map(u => ({
+      id: u._id,
+      name: u.username || "Unknown",
+      profileImage: u.avatarUrl || null,
+      isActive: u.isActive || false,
+      lastSeen: u.lastSeen || new Date(),
+    }));
+
+    res.json(result);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ error: err.message });
   }
 };

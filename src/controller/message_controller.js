@@ -224,13 +224,14 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
     }
 
     const evt = data.event || "message";
+    var timeSend;
 
     try {
       //presence
       if (evt === "presence") {
-        const status = data.status; // 'online' | 'heartbeat' | 'away' | 'offline'
+        const status = data.status; // 'online' | 'heartbeat' | 'offline'
         const curruntUserId = data.userId;
-        const timeSend = data.timeSend;
+        timeSend = data.timeSend;
 
         // parse timeSend (fallback to now if invalid/missing)
         let sentTs = Date.now();
@@ -239,11 +240,6 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
           if (!isNaN(parsed)) sentTs = parsed;
         }
 
-        // consider offline if sent timestamp older than 10s
-        const nowTs = Date.now();
-        const elapsedMs = nowTs - sentTs;
-        const computedStatus =
-          elapsedMs > 10000 ? "offline" : status || "online";
 
         console.log("DEBUG: SERVER MessagerController states:" + status);
 
@@ -277,42 +273,38 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
         return;
       }
 
-      // if (evt === 'heartbeat') {
-      //     req.app.locals.presence = req.app.locals.presence || {};
-      //     req.app.locals.presence[userID] = { status: 'online', ts: new Date().toISOString() };
-      //     return;
-      // }
-
       // TYPING
-      if (evt === "typing") {
+      if (evt === "isTyping") {
         const chatId = data.chatId;
-        const typing = !!data.typing;
-        if (chatId) {
-          const typingPayload = JSON.stringify({
-            event: "typing",
-            chatId,
-            userId: userID,
-            typing,
-          });
-          try {
+        const isTyping = data.status;
+        const senderId = data.userId;
+
+        console.log("DEBUG: SERVER MessagerController isTping:" + isTyping);
+        
+        const typingPayload = JSON.stringify({
+          event: "isTyping",
+          'status' : isTyping,
+          timeSend: new Date().toISOString(),
+        });
+
+        try {
             const chat = await Chat.findById(chatId).select("members").lean();
             if (chat && Array.isArray(chat.members)) {
-              for (const memberId of chat.members) {
-                if (String(memberId) === String(userID)) continue; // Nếu người dùng đã có trong websockets list thì ko thêm
+            for (const memberId of chat.members) {
+                if (String(memberId) === String(senderId)) continue; // Nếu người dùng đã có trong websockets list thì ko thêm
                 const clients = webSockets[String(memberId)];
                 if (!clients) continue;
                 for (const client of clients) {
-                  if (client && client.readyState === 1) {
+                if (client && client.readyState === 1) {
                     try {
-                      client.send(typingPayload);
+                    client.send(typingPayload);
                     } catch (_) {}
-                  }
                 }
-              }
+                }
             }
-          } catch (e) {
+            }
+        } catch (e) {
             /* ignore */
-          }
         }
         return;
       }
@@ -410,17 +402,12 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
         delete webSockets[userID];
       }
     }
-    // const payload = JSON.stringify({
-    //     event: 'not active'
-    // });
 
     console.log(`User Disconnected: ${userID}`);
   });
 
   ws.send(JSON.stringify({ status: "connected", userId: userID }));
 };
-
-//Kiểm tra người dùng có đang active hay không
 
 // HÀM PHỤ TRỢ: Tách Public ID từ URL của cloudinary
 const getPublicIdFromUrl = (url) => {
