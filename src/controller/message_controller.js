@@ -240,8 +240,7 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
           if (!isNaN(parsed)) sentTs = parsed;
         }
 
-
-        console.log("DEBUG: SERVER MessagerController states:" + status);
+        console.log("DEBUG: SERVER MessagerController states:" + status + "; senderId: " + curruntUserId);
 
         try {
           const chats = await Chat.find({ members: curruntUserId })
@@ -257,6 +256,7 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
             status: status,
           });
           for (const member of memberIds) {
+            if(member == curruntUserId) continue;
             const clients = webSockets[member];
             if (!clients) continue;
             for (const client of clients) {
