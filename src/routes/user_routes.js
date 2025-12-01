@@ -3,8 +3,10 @@ import {
   getMyProfile,
   updateUserProfile,
   getUserById,
+  updateAvatar,
 } from "../controller/user_controller.js";
 import { auth } from "../middleware/auth.js"; // <-- Import "người gác cổng"
+import uploadCloud from "../config/cloudinary.config.js"; // Multer Cloudinary
 
 const router = express.Router();
 
@@ -19,5 +21,8 @@ router.put("/profile", auth, updateUserProfile);
 // @route   GET /api/users/:id
 // @desc    Xem thông tin public của người khác (không cần gác cổng)
 router.get("/:id", getUserById);
+
+// Upload avatar lên Cloudinary
+router.put("/avatar", auth, uploadCloud.single("avatar"), updateAvatar);
 
 export default router;
