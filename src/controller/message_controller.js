@@ -9,7 +9,7 @@ export const getAllMessages = async (req, res) => {
 
   try {
     const messages = await Message.find({ chatId: chatId })
-      .populate("sender", "username avatar")
+      .populate("sender", "username avatarUrl")
       .sort({ createdAt: -1 });
     // console.log("Messages: " + messages);
     return res.json(messages);
@@ -58,7 +58,7 @@ export const deleteMessage = async (req, res) => {
 
       const updatedChat = await Chat.findById(msg.chatId)
         .populate("lastMessage", "content sender createdAt")
-        .populate("members", "username avatar")
+        .populate("members", "username avatarUrl")
         .lean();
 
       const chatPayload = JSON.stringify({
@@ -146,12 +146,12 @@ export const uploadImage = async (req, res) => {
 
     const updatedChat = await Chat.findById(req.body.chatId)
       .populate("lastMessage", "content sender createdAt")
-      .populate("members", "username avatar")
+      .populate("members", "username avatarUrl")
       .lean();
 
     // Populate sender small payload
     const populated = await Message.findById(saved._id)
-      .populate("sender", "username avatar")
+      .populate("sender", "username avatarUrl")
       .lean();
 
     // Broadcast to all connected members of the chat if known, else send only to sender
@@ -337,10 +337,10 @@ export const handleWsConnection = async (ws, req, wss, webSockets) => {
 
         const updatedChat = await Chat.findById(chatId)
           .populate("lastMessage", "content sender createdAt")
-          .populate("members", "username avatar")
+          .populate("members", "username avatarUrl")
           .lean();
         const populated = await Message.findById(saved._id)
-          .populate("sender", "username avatar")
+          .populate("sender", "username avatarUrl")
           .lean();
 
         // Broadcast to members
