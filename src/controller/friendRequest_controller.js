@@ -2,6 +2,7 @@
 import FriendRequest from "../models/FriendRequest.js";
 import Friend from "../models/Friend.js";
 import User from "../models/User.js";
+import Chat from "../models/Chat.js";
 
 // lấy danh sách yêu cầu kết bạn
 export const getFriendRequests = async (req, res) => {
@@ -76,6 +77,23 @@ export const acceptFriendRequest = async (req, res) => {
       userId: request.receiverId,
       friendId: request.senderId,
     });
+
+    // Tạo Chat mới nếu chưa tồn tại giữa hai user (hoặc cập nhật updatedAt nếu đã có)
+    try {
+      const senderId = request.senderId;
+      const receiverId = request.receiverId;
+      const existingChat = await Chat.findOne({ members: { $all: [senderId, receiverId] } });
+      if (!existingChat) {
+        await Chat.create({ members: [senderId, receiverId] });
+        console.log("acceptFriendRequest: chat create/update success");
+      } else {
+        existingChat.updatedAt = new Date();
+        await existingChat.save();
+      }
+    } catch (errChat) {
+      //nếu tạo chat thất bại, log để debug
+      console.log("acceptFriendRequest: chat create/update failed:", errChat?.message || errChat);
+    }
 
     res.json({ message: "Friend request accepted" });
   } catch (err) {
