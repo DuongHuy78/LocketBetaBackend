@@ -1,9 +1,7 @@
-// friendRequest_controller.js
 import FriendRequest from "../models/FriendRequest.js";
 import Friend from "../models/Friend.js";
 import User from "../models/User.js";
 
-// lấy danh sách yêu cầu kết bạn
 export const getFriendRequests = async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -32,7 +30,6 @@ export const getFriendRequests = async (req, res) => {
   }
 };
 
-// gửi lời mời kết bạn
 export const sendFriendRequest = async (req, res) => {
   try {
     const { senderId, receiverId } = req.body;
@@ -51,6 +48,28 @@ export const sendFriendRequest = async (req, res) => {
     await newRequest.save();
 
     res.json({ message: "Request sent" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const unsendFriendRequest = async (req, res) => {
+  try {
+    const { senderId, receiverId } = req.body;
+
+    const request = await FriendRequest.findOne({
+      senderId,
+      receiverId,
+      status: "pending",
+    });
+
+    if (!request) {
+      return res.status(404).json({ error: "Friend request not found" });
+    }
+
+    await request.deleteOne();
+
+    res.json({ message: "Friend request cancelled" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
