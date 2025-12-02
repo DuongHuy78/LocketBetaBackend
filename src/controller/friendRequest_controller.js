@@ -22,7 +22,7 @@ export const getFriendRequests = async (req, res) => {
           id: reqItem._id.toString(),
           senderId: reqItem.senderId,
           name: sender?.username || "Unknown",
-          profileImage: sender?.profileImage || null,
+          profileImage: sender?.avatarUrl || null,
         };
       })
     );
