@@ -1,9 +1,8 @@
-// friendRequest_controller.js
 import FriendRequest from "../models/FriendRequest.js";
 import Friend from "../models/Friend.js";
 import User from "../models/User.js";
+import Chat from "../models/Chat.js";
 
-// lấy danh sách yêu cầu kết bạn
 export const getFriendRequests = async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -21,7 +20,7 @@ export const getFriendRequests = async (req, res) => {
           id: reqItem._id.toString(),
           senderId: reqItem.senderId,
           name: sender?.username || "Unknown",
-          profileImage: sender?.profileImage || null,
+          profileImage: sender?.avatarUrl || null,
         };
       })
     );
@@ -32,7 +31,6 @@ export const getFriendRequests = async (req, res) => {
   }
 };
 
-// gửi lời mời kết bạn
 export const sendFriendRequest = async (req, res) => {
   try {
     const { senderId, receiverId } = req.body;
@@ -51,6 +49,28 @@ export const sendFriendRequest = async (req, res) => {
     await newRequest.save();
 
     res.json({ message: "Request sent" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const unsendFriendRequest = async (req, res) => {
+  try {
+    const { senderId, receiverId } = req.body;
+
+    const request = await FriendRequest.findOne({
+      senderId,
+      receiverId,
+      status: "pending",
+    });
+
+    if (!request) {
+      return res.status(404).json({ error: "Friend request not found" });
+    }
+
+    await request.deleteOne();
+
+    res.json({ message: "Friend request cancelled" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -76,6 +96,23 @@ export const acceptFriendRequest = async (req, res) => {
       userId: request.receiverId,
       friendId: request.senderId,
     });
+
+    // Tạo Chat mới nếu chưa tồn tại giữa hai user (hoặc cập nhật updatedAt nếu đã có)
+    try {
+      const senderId = request.senderId;
+      const receiverId = request.receiverId;
+      const existingChat = await Chat.findOne({ members: { $all: [senderId, receiverId] } });
+      if (!existingChat) {
+        await Chat.create({ members: [senderId, receiverId] });
+        console.log("acceptFriendRequest: chat create/update success");
+      } else {
+        existingChat.updatedAt = new Date();
+        await existingChat.save();
+      }
+    } catch (errChat) {
+      //nếu tạo chat thất bại, log để debug
+      console.log("acceptFriendRequest: chat create/update failed:", errChat?.message || errChat);
+    }
 
     res.json({ message: "Friend request accepted" });
   } catch (err) {

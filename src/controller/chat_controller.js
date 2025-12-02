@@ -10,10 +10,10 @@ export const getAllChats = async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'UserId is required' });
 
     const chats = await Chat.find({ members: userId })
-      .populate('members', 'username avatar')
+      .populate('members', 'username avatarUrl')
       .populate({
         path: 'lastMessage',
-        populate: { path: 'sender', select: 'username avatar' }
+        populate: { path: 'sender', select: 'username avatarUrl' }
       })
       .sort({ updatedAt: -1 })
       .lean();
